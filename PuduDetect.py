@@ -1,18 +1,34 @@
 import cv2
 from ultralytics import YOLO
-import argparse
 import time
+import os
 
-def test_model_on_video(video_path, model_path, conf_thresh=0.25, save_output=True):
+# ========== TETAPKAN PATH ANDA DI SINI ==========
+# Path ke file video yang akan diproses
+VIDEO_PATH = "C:/Users/YourName/Videos/your_video.mp4"  # GANTI DENGAN PATH VIDEO ANDA
+# Path ke model YOLOv8
+MODEL_PATH = "best.pt"  # Jika file best.pt di folder yang sama dengan script ini
+# Confidence threshold
+CONFIDENCE_THRESHOLD = 0.25
+# Apakah akan menyimpan output video
+SAVE_OUTPUT = True
+# ================================================
+
+def test_model_on_video():
+    # Cek apakah file video ada
+    if not os.path.exists(VIDEO_PATH):
+        print(f"Error: File video tidak ditemukan: {VIDEO_PATH}")
+        return
+    
     # Load YOLOv8 model
-    print(f"Loading model: {model_path}")
-    model = YOLO(model_path)
+    print(f"Loading model: {MODEL_PATH}")
+    model = YOLO(MODEL_PATH)
     
     # Open the video file
-    print(f"Opening video: {video_path}")
-    cap = cv2.VideoCapture(video_path)
+    print(f"Opening video: {VIDEO_PATH}")
+    cap = cv2.VideoCapture(VIDEO_PATH)
     if not cap.isOpened():
-        print(f"Error: Cannot open video file: {video_path}")
+        print(f"Error: Cannot open video file: {VIDEO_PATH}")
         return
     
     # Get video properties
@@ -24,9 +40,9 @@ def test_model_on_video(video_path, model_path, conf_thresh=0.25, save_output=Tr
     print(f"Video properties: {width}x{height} @ {fps}fps, {total_frames} frames")
     
     # Initialize video writer if saving output
-    output_path = "output_" + video_path.split("/")[-1] if "/" in video_path else "output_" + video_path
+    output_path = "output_" + os.path.basename(VIDEO_PATH)
     out = None
-    if save_output:
+    if SAVE_OUTPUT:
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
         print(f"Saving output to: {output_path}")
@@ -45,7 +61,7 @@ def test_model_on_video(video_path, model_path, conf_thresh=0.25, save_output=Tr
             print(f"Processing frame {frame_count}/{total_frames} ({frame_count/total_frames*100:.1f}%)")
         
         # Run YOLOv8 inference on the frame
-        results = model(frame, conf=conf_thresh)
+        results = model(frame, conf=CONFIDENCE_THRESHOLD)
         
         # Visualize the results on the frame
         annotated_frame = results[0].plot()
@@ -56,7 +72,7 @@ def test_model_on_video(video_path, model_path, conf_thresh=0.25, save_output=Tr
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
         
         # Write the frame to the output video
-        if save_output and out is not None:
+        if SAVE_OUTPUT and out is not None:
             out.write(annotated_frame)
         
         # Display the frame
@@ -80,17 +96,4 @@ def test_model_on_video(video_path, model_path, conf_thresh=0.25, save_output=Tr
     print(f"Average processing speed: {frame_count/total_time:.2f} FPS")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Test YOLOv8 model on video file")
-    parser.add_argument("--video", type=str, required=True, help="Path to input video file")
-    parser.add_argument("--model", type=str, default="best.pt", help="Path to YOLOv8 model (default: best.pt)")
-    parser.add_argument("--conf", type=float, default=0.25, help="Confidence threshold (default: 0.25)")
-    parser.add_argument("--no-save", action="store_true", help="Don't save output video")
-    
-    args = parser.parse_args()
-    
-    test_model_on_video(
-        video_path=args.video,
-        model_path=args.model,
-        conf_thresh=args.conf,
-        save_output=not args.no_save
-    )
+    test_model_on_video()
